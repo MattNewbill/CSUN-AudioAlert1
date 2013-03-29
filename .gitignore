@@ -3,3 +3,5 @@ gen
 /.settings/org.eclipse.jdt.core.prefs
 *~
 *.swp
+/.idea/*
+AudioAlertSystem.iml

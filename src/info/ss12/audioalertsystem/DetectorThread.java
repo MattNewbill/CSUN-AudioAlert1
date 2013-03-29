@@ -41,21 +41,21 @@ public class DetectorThread extends Thread
 
 	/** The Wave Header. Used to set wave configurations */
 	private WaveHeader waveHeader;
-	/** The Whistle API. Detect frequency */
-	private WhistleApi whistleApi;
+	/** The Alarm API. Detect frequency */
+	private AlarmApi alarmApi;
 	/** The thread for detector */
 	private volatile Thread _thread;
 
-	/** The list for whistle results. Used to detect sound level */
-	private LinkedList<Boolean> whistleResultList = new LinkedList<Boolean>();
-	/** The number of whistles */
-	private int numWhistles;
-	/** Total amount of whistles detected */
-	private int totalWhistlesDetected = 0;
-	/** Length check for whistle length */
-	private int whistleCheckLength = 3;
-	/** The pass score for whistle */
-	private int whistlePassScore = 3;
+	/** The list for alarm results. Used to detect sound level */
+	private LinkedList<Boolean> alarmResultList = new LinkedList<Boolean>();
+	/** The number of alarms */
+	private int numAlarm;
+	/** Total amount of alarm detected */
+	private int totalAlarmDetected = 0;
+	/** Length check for alarm length */
+	private int alarmCheckLength = 3;
+	/** The pass score for alarm */
+	private int alarmPassScore = 3;
 	/** Listener to send alerts */
 	private AudioAlert listener;
 
@@ -82,32 +82,27 @@ public class DetectorThread extends Thread
 			bitsPerSample = 8;
 		}
 
-		int channel = 0;
-		// whistle detection only supports mono channel
-		if (audioRecord.getChannelConfiguration() == AudioFormat.CHANNEL_CONFIGURATION_MONO)
-		{
-			channel = 1;
-		}
+		int channel = AudioFormat.CHANNEL_IN_DEFAULT;
 
 		waveHeader = new WaveHeader();
 		waveHeader.setChannels(channel);
 		waveHeader.setBitsPerSample(bitsPerSample);
 		waveHeader.setSampleRate(audioRecord.getSampleRate());
-		whistleApi = new WhistleApi(waveHeader);
+		alarmApi = new AlarmApi(waveHeader);
 	}
 
 	/**
-	 * Initialize whistle api
+	 * Initialize Alarm api
 	 */
 	private void initBuffer()
 	{
-		numWhistles = 0;
-		whistleResultList.clear();
+		numAlarm = 0;
+		alarmResultList.clear();
 
 		// init the first frames
-		for (int i = 0; i < whistleCheckLength; i++)
+		for (int i = 0; i < alarmCheckLength; i++)
 		{
-			whistleResultList.add(false);
+            alarmResultList.add(false);
 		}
 		// end init the first frames
 	}
@@ -149,46 +144,40 @@ public class DetectorThread extends Thread
 				if (buffer != null)
 				{
 					// sound detected
-					// MainActivity.whistleValue = numWhistles;
-
-					// whistle detection
-					// System.out.println("Whistle:");
-					boolean isWhistle = whistleApi.isWhistle(buffer);
-					if (whistleResultList.getFirst())
+					boolean isAlarm = alarmApi.isAlarm(buffer);
+					if (alarmResultList.getFirst())
 					{
-						numWhistles--;
+                        numAlarm--;
 					}
 
-					whistleResultList.removeFirst();
-					whistleResultList.add(isWhistle);
+                    alarmResultList.removeFirst();
+                    alarmResultList.add(isAlarm);
 
-					if (isWhistle)
+					if (isAlarm)
 					{
-						numWhistles++;
+						numAlarm++;
 					}
-					// System.out.println("num:" + numWhistles);
 
-					if (numWhistles >= whistlePassScore)
+					if (numAlarm >= alarmPassScore)
 					{
 						// clear buffer
 						initBuffer();
-						totalWhistlesDetected++;
+						totalAlarmDetected++;
 						listener.sendAlert();
 					}
-					// end whistle detection
+					// end alarm detection
 				}
 				else
 				{
 					// no sound detected
-					if (whistleResultList.getFirst())
+					if (alarmResultList.getFirst())
 					{
-						numWhistles--;
+                        numAlarm--;
 					}
-					whistleResultList.removeFirst();
-					whistleResultList.add(false);
+                    alarmResultList.removeFirst();
+                    alarmResultList.add(false);
 					listener.dismissAlert();
 
-					// MainActivity.whistleValue = numWhistles;
 				}
 				// end audio analyst
 			}
@@ -200,12 +189,12 @@ public class DetectorThread extends Thread
 	}
 
 	/**
-	 * Return the total whistles detected
-	 * @return the number of whistles detected
+	 * Return the total alarm detected
+	 * @return the number of alarms detected
 	 */
-	public int getTotalWhistlesDetected()
+	public int getTotalAlarmDetected()
 	{
-		return totalWhistlesDetected;
+		return totalAlarmDetected;
 	}
 
 }
